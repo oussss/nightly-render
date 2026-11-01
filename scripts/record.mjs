@@ -77,17 +77,26 @@ await tap(p.locator('.bk-service').first(), 'service'); await pause(1300);
 if (await p.locator('.bkf-row').first().isVisible().catch(() => false)) { // "add another service?" (basket)
   await tap(p.locator('.bkf-cta'), 'continue'); mark('time'); await pause(1300);
 } else mark('time');
+// Free times load after a day is tapped ("Recherche des disponibilités…"). Wait until
+// they're there (up to 20 s) before deciding the day is full: on a slow connection the
+// recorder gave up while they were still loading (6 salons on 1 Nov 2026).
+const slotsLoaded = () => p.waitForFunction(() => {
+  const area = document.querySelector('.bkf-slots-area');
+  if (!area) return true;
+  const txt = area.textContent || '';
+  return !/Recherche des disponibilit|جاري البحث عن المواعيد/.test(txt) && !area.querySelector('.bkf-slot-groups.is-loading');
+}, null, { timeout: 20000 }).catch(() => {});
 // The first day with a free slot, starting tomorrow (up to a week ahead).
 const days = p.locator('.bkf-day');
 for (let i = 1; i < Math.min(8, await days.count()); i++) {
-  await tap(days.nth(i), 'day'); await pause(700);
+  await tap(days.nth(i), 'day'); await slotsLoaded(); await pause(700);
   // a full day passes quickly, like a client browsing; a day with slots gets a proper look
   if (await p.locator('.bkf-slot').first().isVisible().catch(() => false)) { await pause(600); break; }
 }
 // Salons that only take bookings for today (max_advance_booking_days = 1, e.g. ekri-dz):
 // nothing from tomorrow on, so fall back to today.
 if (!(await p.locator('.bkf-slot').first().isVisible().catch(() => false)) && await days.count() > 0) {
-  await tap(days.nth(0), 'day'); await pause(900);
+  await tap(days.nth(0), 'day'); await slotsLoaded(); await pause(900);
 }
 const slot = p.locator('.bkf-slot').first();
 if (!(await slot.isVisible().catch(() => false))) {

@@ -1,0 +1,71 @@
+name: Nightly render
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_salons:
+        description: "How many at most"
+        default: "60"
+      only:
+        description: "Only this page (optional)"
+        default: ""
+
+concurrency:
+  group: nightly-render
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - id: plan
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SITE_HOST: ${{ secrets.SITE_HOST }}
+          BRAND_NAME: ${{ secrets.BRAND_NAME }}
+          MAX_SALONS: ${{ github.event.inputs.max_salons || '60' }}
+          ONLY: ${{ github.event.inputs.only }}
+        run: node scripts/nightly.mjs --plan ${ONLY:+--only=$ONLY}
+
+  render:
+    needs: plan
+    if: needs.plan.outputs.count != '0' && needs.plan.outputs.count != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: System packages (video tools, emoji font)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-noto-color-emoji
+      - run: npm ci
+      - name: Browsers
+        run: |
+          npx playwright install --with-deps chromium
+          npx remotion browser ensure
+      - name: Render
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SITE_HOST: ${{ secrets.SITE_HOST }}
+          BRAND_NAME: ${{ secrets.BRAND_NAME }}
+          IDS: ${{ matrix.ids }}
+        run: node scripts/nightly.mjs --ids=$IDS

@@ -1,0 +1,25 @@
+{
+  "name": "nightly-render",
+  "private": true,
+  "type": "module",
+  "description": "Nightly video renders",
+  "scripts": {
+    "nightly": "node scripts/nightly.mjs",
+    "dry-run": "node scripts/nightly.mjs --dry-run",
+    "studio": "remotion studio src/index.ts"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.501",
+    "@remotion/google-fonts": "4.0.501",
+    "@remotion/media": "4.0.501",
+    "@supabase/supabase-js": "^2.108.2",
+    "playwright": "1.61.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.501"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.7",
+    "typescript": "5.9.3"
+  }
+}

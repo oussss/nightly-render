@@ -9,7 +9,7 @@
 // to the "stories" bucket + salon_story_videos.
 //
 // Modes: --plan (list tonight's salons and split them for parallel jobs), --ids=a,b (make
-// these), --only=<slug> (make one), --dry-run (count only). Logs show short ids, never names.
+// these), --only=<id> (make one), --dry-run (count only). Logs show short ids, never names.
 // Env (GitHub secrets, masked in logs): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SITE_HOST,
 // BRAND_NAME. Optional: MAX_SALONS (default 60), SHARDS (default 10).
 import fs from 'node:fs';
@@ -138,7 +138,7 @@ async function main() {
   todo.sort((a, b) => (!!a.video - !!b.video) || String(b.created_at).localeCompare(String(a.created_at)));
   log(`${ready.length} ready salons, ${todo.filter(s => !s.video).length} without a video, ${todo.filter(s => s.video).length} changed`);
   todo = todo.slice(0, MAX);
-  if (ONLY) todo = ready.filter(s => s.slug === ONLY);
+  if (ONLY) todo = ready.filter(s => s.id === ONLY || s.id.startsWith(ONLY)); // id (or its first 8 characters, as in the logs)
   if (IDS) todo = ready.filter(s => IDS.includes(s.id)); // the plan job already chose them
   if (DRY) { todo.forEach(s => log(' -', tag(s), s.video ? '(changed)' : '(new)')); return; }
   if (PLAN) {

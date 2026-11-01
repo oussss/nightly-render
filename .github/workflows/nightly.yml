@@ -7,7 +7,7 @@ on:
         description: "How many at most"
         default: "60"
       only:
-        description: "Only this page (optional)"
+        description: "Only this id (optional, first 8 characters are enough)"
         default: ""
 
 concurrency:

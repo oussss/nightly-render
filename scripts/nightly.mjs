@@ -176,7 +176,7 @@ async function main() {
     const raw = `/tmp/${s.id}-raw.mp4`, mp4 = `/tmp/${s.id}.mp4`, thumb = `/tmp/${s.id}.jpg`;
     const r = await run('npx', ['remotion', 'render', path.join(ROOT, 'build'), 'SalonStory', raw, `--props=${JSON.stringify({ dir: `story/${s.id}`, events: [], fps: 30 })}`, '--scale=0.75' /* 810×1440, whole pixels (Linux refuses 1280.06) */, '--log=error'], { timeoutMs: 1200000 });
     if (r.code !== 0) { log('FAIL render', tag(s), '\n' + r.out.replace(/\x1b\[[0-9;]*m/g, '').split('\n').filter(l => /error|Error|failed|Failed|Cannot|not found/i.test(l)).slice(0, 8).join('\n')); continue; }
-    const e1 = await run('ffmpeg', ['-y', '-loglevel', 'error', '-i', raw, '-vf', 'scale=720:1280:flags=lanczos', '-c:v', 'libx264', '-crf', '28', '-preset', 'slow', '-c:a', 'aac', '-b:a', '96k', '-movflags', '+faststart', mp4]);
+    const e1 = await run('ffmpeg', ['-y', '-loglevel', 'error', '-i', raw, '-vf', 'scale=720:1280:flags=lanczos', '-c:v', 'libx264', '-crf', '34', '-preset', 'slow', '-c:a', 'aac', '-b:a', '64k', '-movflags', '+faststart', mp4]);
     const e2 = await run('ffmpeg', ['-y', '-loglevel', 'error', '-ss', '1.3', '-i', raw, '-frames:v', '1', '-vf', 'scale=300:-1', '-q:v', '4', thumb]);
     if (e1.code !== 0 || e2.code !== 0) { log('FAIL encode', tag(s)); continue; }
     try { await upload(s, mp4, thumb); } catch (e) { log('FAIL upload', tag(s), e.message); continue; }
